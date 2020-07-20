@@ -48,7 +48,7 @@ app.post('/compile', (req, res) => {
             await fs.promises.appendFile(path, compile);
         } catch (err) {
             res.status(500);
-            res.json({"error": "Internal"});
+            res.json({"messager": "Internal Error", "success": false, "typeOfError": "internal"});
             return;
         }
         try {
@@ -57,7 +57,7 @@ app.post('/compile', (req, res) => {
             }, path, {verbose: true})
             console.log("result ", log);
             var result = await fs.promises.readFile(out);
-            res.json({"compiled": result.toString('UTF-8')})  ;
+            res.json({"compiled": result.toString('UTF-8'), "success": true})  ;
 
         } catch (err) {
 		console.log("PROGRAM ERRORS: ");
@@ -78,7 +78,7 @@ app.post('/compile', (req, res) => {
 			};
 		});
             res.status(500);
-            res.json({"error": "Compile", "log": logs});
+            res.json({"success": false, "message": "Unable to compile", "log": logs, "typeOfError": "compile"});
             return;
         }
         cleanupCallback();
