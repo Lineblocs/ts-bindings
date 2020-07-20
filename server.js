@@ -1,13 +1,19 @@
 var fs = require("fs");
 const express = require('express')
 const bodyParser = require('body-parser');
-//var tsc = require('typescript-compiler');
-var ts =require('typescript');
+const tsc = require('node-typescript-compiler');
 var fs = require("fs");
 var path = require("path");
+var tmp = require("tmp");
 const app = express()
 const port = 3000
 var compilerTypings;
+var base = fs.readFileSync(__dirname+"/files/defs.ts");
+
+
+
+
+compilerTypings = base.toString('UTF-8');
 
 
 // parse application/json
@@ -15,85 +21,58 @@ app.use(bodyParser.json())
 app.post('/compile', (req, res) => {
     var code = req.body.code;
     var compile = compilerTypings + "\r\n" + code;
+    tmp.file(async function _tempFileCreated(err, path, fd, cleanupCallback) {
+        if (err) throw err;
+        
+        console.log('File: ', path);
+        console.log('Filedescriptor: ', fd);
+        var out = path + ".out";
+        try {
+            await fs.promises.appendFile(path, compile);
+        } catch (err) {
+            res.statusCode(500);
+            res.json({"error": "Internal"});
+            return;
+        }
+        try {
+            var log = await tsc.compile({
+                outFile: out
+            }, file, {verbose: true})
+            console.log("result ", log);
+            var result = await fs.promises.readFile(loc);
+            res.json({"compiled": result.toString('UTF-8')})  ;
 
-    var js = tsc.compileString(compile, '--lib es2015', null, (err) => {
-        console.error( err );
+        } catch (err) {
+            res.statusCode(500);
+            res.json({"error": "Compile", "code": err});
+            return;
+        }
+        cleanupCallback();
     });
-    console.log(js);
+
+    tsc.compile({
+        //'project': '.'
+        outFile: loc
+    }, file, {verbose: true})
+    .then(function(log) {
+        console.log("result ", log);
+        console.log(fs.readFileSync(loc).toString('UTF-8'));
+    }, function(err) {
+        console.log(err);
+    });
+
 });
-
-var base = fs.readFileSync(__dirname+"/files/defs.ts");
-
-
-
-
-compilerTypings = base.toString('UTF-8');
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+tmp.file(async function _tempFileCreated(err, path, fd, cleanupCallback) {
+  if (err) throw err;
+ 
+  console.log('File: ', path);
+  console.log('Filedescriptor: ', fd);
+  await fs.promises.appendFile(path, "test");
+  console.log((await fs.promises.readFile(path)).toString('UTF-8'));
 
-var ts = require("typescript");
-var fs = require("fs");
-var path = require("path");
-
-function transform(contents, libSource, compilerOptions) {
-    // Generated outputs
-    var outputs = [];
-    // Create a compilerHost object to allow the compiler to read and write files
-    var compilerHost = {
-        getSourceFile: function (filename, languageVersion) {
-            console.log("source file for: " + filename);
-            if (filename === "file.ts") {
-                return ts.createSourceFile(filename, contents, compilerOptions.target, "0");
-            } else {
-                var libSource = fs.readFileSync(__dirname+"/TypeScript/lib/" + filename).toString();
-                var result = ts.createSourceFile(filename, libSource, compilerOptions.target, "0");
-                console.log(result);
-                return result;
-            }
-        },
-        writeFile: function (name, text, writeByteOrderMark) {
-            console.log(arguments);
-            outputs.push({ name: name, text: text, writeByteOrderMark: writeByteOrderMark });
-        },
-        getDefaultLibFileName: function () { return "lib.d.ts"; },
-        useCaseSensitiveFileNames: function () { return false; },
-        getCanonicalFileName: function (filename) { return filename; },
-        getCurrentDirectory: function () { return ""; },
-        getNewLine: function () { return "\n"; }
-    };
-    // Create a program from inputs
-    var program = ts.createProgram(["file.ts"], compilerOptions, compilerHost);
-    // Query for early errors
-    var errors = program.getProgramDiagnostics();
-    console.log(errors);
-
-    return;
-    // Do not generate code in the presence of early errors
-    if (!errors.length) {
-        // Type check and get semantic errors
-        var checker = program.getTypeChecker(true);
-        errors = checker.getDiagnostics();
-        // Generate output
-        checker.emitFiles();
-    }
-    return {
-        outputs: outputs,
-        errors: errors.map(function (e) { return e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText; })
-    };
-}
-
-const tsc = require('node-typescript-compiler');
-const { textSpanOverlapsWith } = require("typescript");
-//var file = __dirname+"/files/defs.ts";
-var file = __dirname+"/test.ts";
-var loc = '/tmp/123.js';
-
-tsc.compile({
-    //'project': '.'
-	outFile: loc
-}, file, {verbose: true})
-.then(function(log) {
-    console.log("result ", log);
-	console.log(fs.readFileSync(loc).toString('UTF-8'));
-}, function(err) {
-    console.log(err);
+  // If we don't need the file anymore we could manually call the cleanupCallback
+  // But that is not necessary if we didn't pass the keep option because the library
+  // will clean after itself.
+  cleanupCallback();
 });
