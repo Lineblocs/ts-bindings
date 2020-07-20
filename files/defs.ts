@@ -1,9 +1,9 @@
 declare class module {
     public static exports: any;
 }
-declare var console: any;
+//declare var console: any;
 declare var require: any;
-declare var setTimeout: any;
+//declare var setTimeout: any;
 declare class LineUser {
     public info: any;
     public id: number;

@@ -83,13 +83,17 @@ function transform(contents, libSource, compilerOptions) {
 
 const tsc = require('node-typescript-compiler');
 const { textSpanOverlapsWith } = require("typescript");
-var file = __dirname+"/files/defs.ts";
-var file = "";
+//var file = __dirname+"/files/defs.ts";
+var file = __dirname+"/test.ts";
+var loc = '/tmp/123.js';
+
 tsc.compile({
     //'project': '.'
+	outFile: loc
 }, file, {verbose: true})
 .then(function(log) {
-    console.log(log);
+    console.log("result ", log);
+	console.log(fs.readFileSync(loc).toString('UTF-8'));
 }, function(err) {
     console.log(err);
 });
