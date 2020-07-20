@@ -5,6 +5,7 @@ const tsc = require('node-typescript-compiler');
 var fs = require("fs");
 var path = require("path");
 var tmp = require("tmp");
+var cors= require("cors");
 const app = express()
 const port = 8080;
 var compilerTypings;
@@ -87,6 +88,7 @@ app.post('/compile', (req, res) => {
 setImmediate(async function() {
 	lines = await countFileLines();
   console.log("lines ", lines);
+  app.use(cors());
   app.use(express.static('files'))
 
 	app.listen(port, "0.0.0.0", () => console.log(`Example app listening at http://localhost:${port}`))
