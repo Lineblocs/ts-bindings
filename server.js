@@ -86,7 +86,8 @@ app.post('/compile', (req, res) => {
 });
 setImmediate(async function() {
 	lines = await countFileLines();
-	console.log("lines ", lines);
+  console.log("lines ", lines);
+  app.use(express.static('files'))
 
 	app.listen(port, "0.0.0.0", () => console.log(`Example app listening at http://localhost:${port}`))
 });
